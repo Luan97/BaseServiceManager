@@ -113,6 +113,7 @@ final class BaseServiceManager: NSObject, URLSessionDelegate {
     
     actual URLRequest endpoint request
     */
+    @discardableResult
     public func performDecoderRequest<T:Decodable>(urlRequest: URLRequest, success:@escaping (T) -> (), failure: @escaping FailureHandler) -> URLSessionDataTask {
         let completionHandler: RequestCompletionHandler = {[weak self] (data, urlResponse, error) in
             guard let self = self else {
@@ -163,6 +164,8 @@ final class BaseServiceManager: NSObject, URLSessionDelegate {
         return task
     }
     
+    /// dataParsingIssue
+    /// - Returns: BaseError
     public func dataParsingIssue() -> BaseError {
         let errorCode = EnumBaseErrorType.UNDEFINED.rawValue
         let baseError = BaseError(type: .UNDEFINED)
