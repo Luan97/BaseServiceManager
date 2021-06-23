@@ -30,7 +30,7 @@ final class BaseServiceManager: NSObject, URLSessionDelegate {
     }
 
     /**
-     performWithRequest
+     performRequest
      
      - Parameters:
         - urlRequest:URLRequest
@@ -39,7 +39,8 @@ final class BaseServiceManager: NSObject, URLSessionDelegate {
      
      actual URLRequest endpoint request
      */
-    public func performWithRequest(urlRequest: URLRequest, success: @escaping SuccessHandler, failure: @escaping FailureHandler) -> URLSessionDataTask{
+    @discardableResult
+    public func performRequest(urlRequest: URLRequest, success: @escaping SuccessHandler, failure: @escaping FailureHandler) -> URLSessionDataTask{
         let completionHandler: RequestCompletionHandler = {[weak self] (data, urlResponse, error) in
             guard let self = self else {
                 return
@@ -103,7 +104,7 @@ final class BaseServiceManager: NSObject, URLSessionDelegate {
     }
     
     /**
-    performWithGenericRequest<T:Decodable>
+     performDecoderRequest<T:Decodable>
     
     - Parameters:
        - urlRequest:URLRequest
@@ -112,7 +113,7 @@ final class BaseServiceManager: NSObject, URLSessionDelegate {
     
     actual URLRequest endpoint request
     */
-    public func performWithGenericRequest<T:Decodable>(urlRequest: URLRequest, success:@escaping (T) -> (), failure: @escaping FailureHandler) -> URLSessionDataTask {
+    public func performDecoderRequest<T:Decodable>(urlRequest: URLRequest, success:@escaping (T) -> (), failure: @escaping FailureHandler) -> URLSessionDataTask {
         let completionHandler: RequestCompletionHandler = {[weak self] (data, urlResponse, error) in
             guard let self = self else {
                 return

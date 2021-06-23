@@ -1,6 +1,6 @@
 //
 //  BaseError.swift
-//  BaseServiceManager
+//  SharedService
 //
 //  Created by Luan Chiang on 3/20/19.
 //  Copyright © 2019 Luan Chiang. All rights reserved.
@@ -89,6 +89,6 @@ public class BaseError {
     }
 
     public func getErrorCode()->Int{
-        return errorCode 
+        return errorCode
     }
 }

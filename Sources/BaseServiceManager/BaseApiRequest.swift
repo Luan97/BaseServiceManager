@@ -47,11 +47,9 @@ public class BaseApiRequest {
         request.cachePolicy = URLRequest.CachePolicy.reloadIgnoringLocalCacheData
         request.setValue(BaseApiRequest.kApplicationJson, forHTTPHeaderField: BaseApiRequest.kContentType)
         
-        if let fields = headerFields {
-            for case let header? in fields  {
-                request.setValue(header.value, forHTTPHeaderField: header.key)
-            }
-        }
+        headerFields?.forEach({ (key: String, value: String) in
+            request.setValue(value, forHTTPHeaderField: key)
+        })
         return request
     }
     

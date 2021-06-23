@@ -12,8 +12,9 @@
             
             // compose request
             let request = BaseApiRequest.composeRequest(type: ApiRequestType.GET, url: url!, headerFields: fields ,arguments: arguments)
-            BaseServiceManager.shared.performWithRequest(urlRequest: request, success: {dictionary in
+            BaseServiceManager.shared.performRequest(urlRequest: request, success: {dictionary in
                 XCTAssertNotNil(dictionary, "No data was downloaded")
+                print(dictionary as Any? ?? "")
                 expect.fulfill()
             }) { (error) in
                 print("error")
