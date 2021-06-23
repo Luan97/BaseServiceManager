@@ -1,6 +1,6 @@
 //
 //  BaseServiceManager.swift
-//  BaseServiceManager
+//  SharedService
 //
 //  Created by Luan Chiang on 3/15/19.
 //  Copyright © 2019 Luan Chiang. All rights reserved.
@@ -8,7 +8,7 @@
 
 import Foundation
 
-public class BaseServiceManager: NSObject, URLSessionDelegate {
+final class BaseServiceManager: NSObject, URLSessionDelegate {
     private typealias RequestCompletionHandler = (Data?, URLResponse?, Error?) -> Void
     private typealias DownloadCompletionHandler = (URL?, URLResponse?, Error?) -> Void
     public typealias SuccessHandler = (_ result: Any?) -> Void
@@ -39,36 +39,35 @@ public class BaseServiceManager: NSObject, URLSessionDelegate {
      
      actual URLRequest endpoint request
      */
-    @discardableResult
     public func performWithRequest(urlRequest: URLRequest, success: @escaping SuccessHandler, failure: @escaping FailureHandler) -> URLSessionDataTask{
         let completionHandler: RequestCompletionHandler = {[weak self] (data, urlResponse, error) in
             guard let self = self else {
                 return
             }
-            
+            var baseError: BaseError?
             let httpStatusCode = self.statusCode(urlResponse)
-            if (httpStatusCode == 503) {
-                //TODO notify global base error presnetor for maintenance message
-                //self.globalErrorDelegate?.presentMaintenanceView()
-                return
-            }
+            // check if URLSession request returns error
             if let error = error as NSError? {
                 print(error.localizedDescription)
-                let baseError = BaseError.error(withCode: error.code)
+                baseError = BaseError.error(withCode: error.code)
                 baseError?.errorCode = error.code
                 baseError?.errorMessage = "There was a network error"
                 failure(baseError)
                 return
             }
             
-            var jsonResponse: Any?
-            var baseError: BaseError?
-            
-            guard let data = data else {
-                print("Unable to parse the response")
+            // check for success http status code
+            if !self.isSuccessCheck(urlResponse) {
                 baseError = BaseError.error(withCode: httpStatusCode)
                 baseError?.errorCode = httpStatusCode
-                baseError?.errorMessage = "Unable to parse the response"
+                failure(baseError)
+                return
+            }
+            
+            var jsonResponse: Any?
+            guard let data = data else {
+                print("Unable to parse the response")
+                baseError = self.dataParsingIssue()
                 failure(baseError)
                 return
             }
@@ -76,13 +75,16 @@ public class BaseServiceManager: NSObject, URLSessionDelegate {
             if let response = urlResponse as? HTTPURLResponse {
                 let fields = response.allHeaderFields
                 _ = HTTPCookie.cookies(withResponseHeaderFields: fields as! [String : String], for: urlResponse!.url!)
-                //CookieManager.sharedInstance.updateCookies(cookies)
+                // manage cookie storage here if necessary
+            }
+            do {
+                jsonResponse = try JSONSerialization.jsonObject(with:data, options: [])
+            } catch let error {
+                baseError = BaseError.error(with: .JSON_SERIALIZE_ERROR)
+                baseError?.errorMessage = error.localizedDescription
+                failure(baseError)
             }
             
-            jsonResponse = try? JSONSerialization.jsonObject(with:data, options: [])
-            #if DEBUG
-                print(jsonResponse as Any)
-            #endif
             if self.isSuccessCheck(urlResponse) {
                 self.handleSuccessfulResponseData(jsonResponse, success: success, failure: failure)
                 return
@@ -94,6 +96,66 @@ public class BaseServiceManager: NSObject, URLSessionDelegate {
             baseError?.errorMessage = String(data: data, encoding:.utf8)
             
             failure(baseError)
+        }
+        let task = session.dataTask(with: urlRequest, completionHandler: completionHandler)
+        task.resume()
+        return task
+    }
+    
+    /**
+    performWithGenericRequest<T:Decodable>
+    
+    - Parameters:
+       - urlRequest:URLRequest
+       - success:(T) -> ()
+       - failure:FailureHandler
+    
+    actual URLRequest endpoint request
+    */
+    public func performWithGenericRequest<T:Decodable>(urlRequest: URLRequest, success:@escaping (T) -> (), failure: @escaping FailureHandler) -> URLSessionDataTask {
+        let completionHandler: RequestCompletionHandler = {[weak self] (data, urlResponse, error) in
+            guard let self = self else {
+                return
+            }
+            var baseError: BaseError?
+            let httpStatusCode = self.statusCode(urlResponse)
+            // check if URLSession request returns error
+            if let error = error as NSError? {
+                print(error.localizedDescription)
+                let baseError = BaseError.error(withCode: error.code)
+                baseError?.errorCode = error.code
+                baseError?.errorMessage = "There was a network error"
+                failure(baseError)
+                return
+            }
+            
+            // check for success http status code
+            if !self.isSuccessCheck(urlResponse) {
+                baseError = BaseError.error(withCode: httpStatusCode)
+                baseError?.errorCode = httpStatusCode
+                failure(baseError)
+                return
+            }
+            // check if data exist
+            guard let data = data else {
+                print("Unable to parse the response")
+                baseError = BaseError.error(withCode: httpStatusCode)
+                baseError?.errorCode = httpStatusCode
+                baseError?.errorMessage = "Unable to parse the response"
+                failure(baseError)
+                return
+            }
+            // do JSONDecodaber parsing
+            do {
+                let result = try JSONDecoder().decode(T.self , from: data)
+                success(result)
+                return
+            } catch let error {
+                print(error)
+                baseError = BaseError.error(with: .JSON_DECODABLE_ERROR)
+                baseError?.errorMessage = error.localizedDescription
+                failure(baseError)
+            }
         }
         let task = session.dataTask(with: urlRequest, completionHandler: completionHandler)
         task.resume()

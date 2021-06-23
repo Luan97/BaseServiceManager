@@ -1,6 +1,6 @@
 //
 //  BaseErrorType.swift
-//  BaseServiceManager
+//  SharedService
 //
 //  Created by Luan Chiang on 3/20/19.
 //  Copyright © 2019 Luan Chiang. All rights reserved.
@@ -16,6 +16,9 @@ public enum EnumBaseErrorType : Int {
     case FORBIDDEN
     case USER_NOT_LOGGED_IN
     case NETWORK_PROBLEM
+    case SERVICE_UNAVAILABLE
+    case JSON_DECODABLE_ERROR
+    case JSON_SERIALIZE_ERROR
 }
 
 struct BaseErrorType {
@@ -24,6 +27,7 @@ struct BaseErrorType {
     private static let kCodeNotFound: Int = 404
     private static let kCodeInternalServerError: Int = 500
     private static let kCodeBadGateway: Int = 502
+    private static let kCodeServiceUnavailable: Int = 503
     private static let kApiGeneric = "error.generic"
     
     
@@ -58,6 +62,8 @@ struct BaseErrorType {
             return EnumBaseErrorType.CANCELLED
         case kCodeForbidden:
             return EnumBaseErrorType.FORBIDDEN
+        case kCodeServiceUnavailable:
+            return EnumBaseErrorType.SERVICE_UNAVAILABLE
         default:
             print(String(format: "Error Code: %ld not handled correctly", code))
             return EnumBaseErrorType.GENERIC
@@ -88,13 +94,10 @@ struct BaseErrorType {
             return NSLocalizedString("User is not logged in", comment: "")
         case .NETWORK_PROBLEM:
             return NSLocalizedString("There is a problem with the network", comment: "")
-        
+        case .SERVICE_UNAVAILABLE:
+            return NSLocalizedString("Service unavailable", comment: "")
         case .GENERIC:
             return NSLocalizedString("Generic Api Error", comment: "")
-//        case .SERVER_INTERNAL:
-//            return NSLocalizedString("Server Internal Error", comment: "")
-//        case .BAD_GATEWAY:
-//            return NSLocalizedString("Bad Gateway", comment: "")
         default:
             return ""
         }
